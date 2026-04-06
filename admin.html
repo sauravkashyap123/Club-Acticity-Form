@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — Club Registrations</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #ede8df;
+    --card: #ffffff;
+    --accent: #1a1a2e;
+    --accent2: #c9432a;
+    --nagpuri: #7b3fa0;
+    --music: #1a7a4a;
+    --text: #1a1a1a;
+    --muted: #8a8070;
+    --border: #d8d2c6;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Topbar */
+  .topbar {
+    background: var(--accent);
+    color: #fff;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 4px 24px rgba(26,26,46,0.15);
+  }
+  .topbar .brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .brand .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  .topbar .actions { display: flex; gap: 12px; align-items: center; }
+  .topbar a {
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+  }
+  .topbar a:hover { color: #fff; }
+
+  .btn-clear {
+    background: rgba(201,67,42,0.15);
+    border: 1px solid rgba(201,67,42,0.4);
+    color: #ff7059;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .btn-clear:hover { background: rgba(201,67,42,0.3); }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; }
+
+  /* Page title */
+  .page-title { margin-bottom: 32px; }
+  .page-title h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .page-title p { color: var(--muted); font-size: 14px; margin-top: 6px; font-weight: 400; }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--stripe, var(--accent));
+    border-radius: 16px 16px 0 0;
+  }
+  .stat.total { --stripe: var(--accent); }
+  .stat.nagpuri { --stripe: var(--nagpuri); }
+  .stat.music { --stripe: var(--music); }
+  .stat.seats { --stripe: var(--accent2); }
+
+  .stat .num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+  .stat .lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+  /* Filter */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .filter-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .search-box {
+    margin-left: auto;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    width: 200px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead tr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    text-align: left;
+    padding: 14px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    animation: rowIn 0.3s ease both;
+  }
+  @keyframes rowIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(26,26,46,0.03); }
+  td { padding: 16px 20px; font-size: 14px; }
+  td.num-cell {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  td.roll-cell {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .club-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .club-badge.nagpuri { background: rgba(123,63,160,0.1); color: var(--nagpuri); }
+  .club-badge.music   { background: rgba(26,122,74,0.1);  color: var(--music); }
+
+  .time-cell { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--muted);
+  }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  /* Delete */
+  .del-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .del-btn:hover { color: var(--accent2); border-color: rgba(201,67,42,0.3); background: rgba(201,67,42,0.06); }
+
+  /* Export */
+  .btn-export {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+  }
+  .btn-export:hover { background: var(--accent); color: #fff; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .topbar { padding: 0 16px; }
+    .main { padding: 24px 12px 48px; }
+    table { font-size: 12px; }
+    th, td { padding: 12px 10px; }
+    .time-cell { display: none; }
+    .search-box { width: 130px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="dot"></div>
+    Admin Panel
+  </div>
+  <div class="actions">
+    <a href="Index.html">← Registration Form</a>
+    <button class="btn-clear" onclick="confirmClear()">Clear All</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-title">
+    <h1>Registrations</h1>
+    <p>Cultural Fest 2025 — Club Enrollment Dashboard</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat total">
+      <div class="num" id="statTotal">0</div>
+      <div class="lbl">Total Enrolled</div>
+    </div>
+    <div class="stat nagpuri">
+      <div class="num" id="statNagpuri">0</div>
+      <div class="lbl">Nagpuri Dance</div>
+    </div>
+    <div class="stat music">
+      <div class="num" id="statMusic">0</div>
+      <div class="lbl">Music Club</div>
+    </div>
+    <div class="stat seats">
+      <div class="num" id="statSeats">27</div>
+      <div class="lbl">Seats Left</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Nagpuri Dance Club', this)">🥁 Nagpuri Dance</button>
+    <button class="filter-btn" onclick="setFilter('Music Club', this)">🎵 Music Club</button>
+    <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+    <input class="search-box" type="text" id="searchBox" placeholder="Search name or roll…" oninput="render()" />
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Roll No</th>
+          <th>Club</th>
+          <th>Registered At</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const MAX = 27;
+  let currentFilter = 'all';
+
+  function getData() {
+    return JSON.parse(localStorage.getItem('clubRegistrations') || '[]');
+  }
+  function saveData(arr) {
+    localStorage.setItem('clubRegistrations', JSON.stringify(arr));
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+      + ' · ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function getBadge(club) {
+    if (club === 'Nagpuri Dance Club')
+      return '<span class="club-badge nagpuri">🥁 Nagpuri Dance Club</span>';
+    return '<span class="club-badge music">🎵 Music Club</span>';
+  }
+
+  function render() {
+    const all = getData();
+    const search = document.getElementById('searchBox').value.toLowerCase();
+
+    let filtered = all.filter(r => {
+      const matchClub = currentFilter === 'all' || r.club === currentFilter;
+      const matchSearch = !search ||
+        r.name.toLowerCase().includes(search) ||
+        r.rollno.toLowerCase().includes(search);
+      return matchClub && matchSearch;
+    });
+
+    // Stats
+    document.getElementById('statTotal').textContent = all.length;
+    document.getElementById('statNagpuri').textContent = all.filter(r => r.club === 'Nagpuri Dance Club').length;
+    document.getElementById('statMusic').textContent = all.filter(r => r.club === 'Music Club').length;
+    document.getElementById('statSeats').textContent = Math.max(0, MAX - all.length);
+
+    const tbody = document.getElementById('tableBody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6">
+        <div class="empty"><div class="icon">📋</div><p>No registrations found.</p></div>
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map((r, i) => `
+      <tr>
+        <td class="num-cell">${String(i + 1).padStart(2, '0')}</td>
+        <td><strong>${escHtml(r.name)}</strong></td>
+        <td class="roll-cell">${escHtml(r.rollno)}</td>
+        <td>${getBadge(r.club)}</td>
+        <td class="time-cell">${formatDate(r.timestamp)}</td>
+        <td><button class="del-btn" onclick="deleteEntry(${r.id})" title="Remove">✕</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('Remove this registration?')) return;
+    saveData(getData().filter(r => r.id !== id));
+    render();
+  }
+
+  function confirmClear() {
+    if (!confirm('Clear ALL registrations? This cannot be undone.')) return;
+    saveData([]);
+    render();
+  }
+
+  function exportCSV() {
+    const data = getData();
+    if (!data.length) return alert('No data to export.');
+    const header = 'Sr,Name,Roll No,Club,Registered At';
+    const rows = data.map((r, i) =>
+      `${i+1},"${r.name}","${r.rollno}","${r.club}","${formatDate(r.timestamp)}"`
+    );
+    const csv = [header, ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'club_registrations.csv';
+    a.click();
+  }
+
+  // Auto-refresh every 5s (in case form is open in another tab)
+  setInterval(render, 5000);
+  render();
+</script>
+</body>
+</html>
